@@ -73,7 +73,7 @@ export function reactive(target: object) {
   )
 }
 
-// 当最上层的属性是反应式属性时，返回源数据的反应式拷贝
+// 返回一个原始对象的反应式数据拷贝，其中只有根级别属性是反应式的
 // 并且不会解开refs，也不会递归转换返回的属性
 export function shallowReactive<T extends object>(target: T): T {
   return createReactiveObject(
@@ -118,10 +118,9 @@ export function readonly<T extends object>(
   )
 }
 
-// Return a reactive-copy of the original object, where only the root level
-// properties are readonly, and does NOT unwrap refs nor recursively convert
-// returned properties.
-// This is used for creating the props proxy object for stateful components.
+// 返回一个原始对象的反应式数据拷贝，其中只有根级别属性是只读的
+// 并且不会解开引用，也不会递归转换返回的属性。
+// 这用于为有状态组件创建props代理对象。
 export function shallowReadonly<T extends object>(
   target: T
 ): Readonly<{ [K in keyof T]: UnwrapNestedRefs<T[K]> }> {
