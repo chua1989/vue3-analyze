@@ -37,7 +37,11 @@ class ComputedRefImpl<T> {
     this.effect = effect(getter, {
       lazy: true,
       scheduler: () => {
+        // 这个函数在计算属性执行setter时，依赖的数据执行对应的setter,从依赖数据的观察者中获取出来执行
+        // scheduler函数和作用函数effect二选一执行，scheduler优先
+        // 由于计算属性提供了scheduler函数，所以回进入该函数体，将数标记为脏值（和缓存的值不同）
         if (!this._dirty) {
+          // 标记为脏数据，并触发通知观察者执行set
           this._dirty = true
           trigger(toRaw(this), TriggerOpTypes.SET, 'value')
         }
@@ -48,6 +52,8 @@ class ComputedRefImpl<T> {
   }
 
   get value() {
+    // 获取数据的时候，先看数据是否脏值（即有赋为新值，和缓存的值不同）
+    // 有脏值，则以脏值为准，并缓存脏值为value,同时去掉脏值标记
     if (this._dirty) {
       this._value = this.effect()
       this._dirty = false

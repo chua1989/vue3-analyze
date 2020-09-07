@@ -95,6 +95,7 @@ function createReactiveEffect<T = any>( fn: () => T, options: ReactiveEffectOpti
     // 与之对应的trackStack添加对应的shouldTrack标志
     // 并返回fn()
     if (!effect.active) {
+      // 停止响应式数据后，不再执行数据追踪等
       return options.scheduler ? undefined : fn()
     }
     if (!effectStack.includes(effect)) {
@@ -194,7 +195,7 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
 }
 
 /**
- * @desc 触发响应
+ * @desc 触发响应,通知观察者
  * @param target
  * @param type
  * @param key
@@ -243,6 +244,8 @@ export function trigger(
       add(depsMap.get(key))
     }
     // 运行 ADD | DELETE | Map.SET 的迭代key
+    // 非数组或者数组中key为数字的add，
+    // 以及非数组的delete需要触发迭代
     const shouldTriggerIteration =
       (type === TriggerOpTypes.ADD &&
         (!isArray(target) || isIntegerKey(key))) ||
@@ -270,6 +273,7 @@ export function trigger(
         oldTarget
       })
     }
+    // 如果有提供scheduler则执行scheduler，否则执行函数本身
     if (effect.options.scheduler) {
       effect.options.scheduler(effect)
     } else {

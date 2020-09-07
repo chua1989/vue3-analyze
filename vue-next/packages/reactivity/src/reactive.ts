@@ -165,7 +165,8 @@ function createReactiveObject(
   if (existingProxy) {
     return existingProxy
   }
-  // 只能观察类型在白名单中的数据。
+  // 只能观察类型在白名单中的数据类型。
+  // 即Object'、'Array'、'Map'、'Set'、'WeakMap''WeakSet':
   const targetType = getTargetType(target)
   if (targetType === TargetType.INVALID) {
     return target

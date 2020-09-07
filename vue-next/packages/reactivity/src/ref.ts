@@ -54,6 +54,7 @@ class RefImpl<T> {
   }
 
   get value() {
+    // 触发数据追踪track
     track(toRaw(this), TrackOpTypes.GET, 'value')
     return this._value
   }
@@ -61,19 +62,23 @@ class RefImpl<T> {
   set value(newVal) {
     if (hasChanged(toRaw(newVal), this._rawValue)) {
       this._rawValue = newVal
+      //将新值转化为响应式数据，并调用trigger通知所有的观察者。
       this._value = this._shallow ? newVal : convert(newVal)
       trigger(toRaw(this), TriggerOpTypes.SET, 'value', newVal)
     }
   }
 }
 
+// 核心函数，创建引用，并根据情况创建数据代理
 function createRef(rawValue: unknown, shallow = false) {
   if (isRef(rawValue)) {
     return rawValue
   }
+  // 内除创建ref实例结构，并创建代理
   return new RefImpl(rawValue, shallow)
 }
 
+// 通知观察者
 export function triggerRef(ref: Ref) {
   trigger(ref, TriggerOpTypes.SET, 'value', __DEV__ ? ref.value : void 0)
 }
@@ -83,7 +88,9 @@ export function unref<T>(ref: T): T extends Ref<infer V> ? V : T {
 }
 
 const shallowUnwrapHandlers: ProxyHandler<any> = {
+  // getter时会自动解开ref包裹，返回ref的原始值
   get: (target, key, receiver) => unref(Reflect.get(target, key, receiver)),
+  // setter时，特殊处理ref包裹
   set: (target, key, value, receiver) => {
     const oldValue = target[key]
     if (isRef(oldValue) && !isRef(value)) {
@@ -95,6 +102,7 @@ const shallowUnwrapHandlers: ProxyHandler<any> = {
   }
 }
 
+// 对ref类型进行代理
 export function proxyRefs<T extends object>(
   objectWithRefs: T
 ): ShallowUnwrapRef<T> {
@@ -134,7 +142,11 @@ class CustomRefImpl<T> {
     this._set(newVal)
   }
 }
-
+// 自定义ref类型，使用提供factory，factory有两个形参，并返回get set
+// { get, set } = factory(
+//       () => track(this, TrackOpTypes.GET, 'value'),
+//       () => trigger(this, TriggerOpTypes.SET, 'value')
+//     )
 export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
   return new CustomRefImpl(factory) as any
 }
@@ -150,6 +162,7 @@ export function toRefs<T extends object>(object: T): ToRefs<T> {
   return ret
 }
 
+// 普通对象+key的引用class
 class ObjectRefImpl<T extends object, K extends keyof T> {
   public readonly __v_isRef = true
 
@@ -164,6 +177,7 @@ class ObjectRefImpl<T extends object, K extends keyof T> {
   }
 }
 
+// 和ref函数类似，不过使用已有的key替代value
 export function toRef<T extends object, K extends keyof T>(
   object: T,
   key: K

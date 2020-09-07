@@ -27,22 +27,24 @@ const toShallow = <T extends unknown>(value: T): T => value
 const getProto = <T extends CollectionTypes>(v: T): any =>
   Reflect.getPrototypeOf(v)
 
+// 核心函数，处理collection类型的get请求，并对其value添加代理
 function get(
   target: MapTypes,
   key: unknown,
   isReadonly = false,
   isShallow = false
 ) {
-  // #1772: readonly(reactive(Map)) should return readonly + reactive version
-  // of the value
+  // #1772: readonly（reactive（Map））应该返回值的只读+反应版本
   target = (target as any)[ReactiveFlags.RAW]
   const rawTarget = toRaw(target)
   const rawKey = toRaw(key)
   if (key !== rawKey) {
+    // 非只读，添加数据追踪
     !isReadonly && track(rawTarget, TrackOpTypes.GET, key)
   }
   !isReadonly && track(rawTarget, TrackOpTypes.GET, rawKey)
   const { has } = getProto(rawTarget)
+  // collection类型里面的值，手动添加对应类型的代理
   const wrap = isReadonly ? toReadonly : isShallow ? toShallow : toReactive
   if (has.call(rawTarget, key)) {
     return wrap(target.get(key))
@@ -82,11 +84,13 @@ function add(this: SetTypes, value: unknown) {
   return result
 }
 
+// 核心函数，处理collection类型的set请求，并通知观察者
 function set(this: MapTypes, key: unknown, value: unknown) {
   value = toRaw(value)
   const target = toRaw(this)
   const { has, get, set } = getProto(target)
 
+  // 判断target中是否已经有包含key属性
   let hadKey = has.call(target, key)
   if (!hadKey) {
     key = toRaw(key)
@@ -95,6 +99,7 @@ function set(this: MapTypes, key: unknown, value: unknown) {
     checkIdentityKeys(target, has, key)
   }
 
+  // 没有包含key属性，则为add,否则为set
   const oldValue = get.call(target, key)
   const result = set.call(target, key, value)
   if (!hadKey) {
@@ -117,7 +122,7 @@ function deleteEntry(this: CollectionTypes, key: unknown) {
   }
 
   const oldValue = get ? get.call(target, key) : undefined
-  // forward the operation before queueing reactions
+  // 在执行反应式数据队列之前触发
   const result = del.call(target, key)
   if (hadKey) {
     trigger(target, TriggerOpTypes.DELETE, key, undefined, oldValue)
@@ -133,7 +138,7 @@ function clear(this: IterableCollections) {
       ? new Map(target)
       : new Set(target)
     : undefined
-  // forward the operation before queueing reactions
+  // 在执行反应式数据队列之前触发
   const result = getProto(target).clear.call(target)
   if (hadItems) {
     trigger(target, TriggerOpTypes.CLEAR, undefined, undefined, oldTarget)
@@ -153,9 +158,9 @@ function createForEach(isReadonly: boolean, isShallow: boolean) {
     const wrap = isReadonly ? toReadonly : isShallow ? toShallow : toReactive
     !isReadonly && track(rawTarget, TrackOpTypes.ITERATE, ITERATE_KEY)
     return target.forEach((value: unknown, key: unknown) => {
-      // important: make sure the callback is
-      // 1. invoked with the reactive map as `this` and 3rd arg
-      // 2. the value received should be a corresponding reactive/readonly.
+      // 重要：确保回调是
+      // 1. 使用反应式地图“ this”和第三个参数调用
+      // 2. 收到的值应为相应的反应式/只读。
       return callback.call(thisArg, wrap(value), wrap(key), observed)
     })
   }
@@ -174,6 +179,7 @@ interface IterationResult {
   done: boolean
 }
 
+// 创建可迭代方法
 function createIterableMethod(
   method: string | symbol,
   isReadonly: boolean,
@@ -196,10 +202,9 @@ function createIterableMethod(
         TrackOpTypes.ITERATE,
         isKeyOnly ? MAP_KEY_ITERATE_KEY : ITERATE_KEY
       )
-    // return a wrapped iterator which returns observed versions of the
-    // values emitted from the real iterator
+    // 返回包装的迭代器，该迭代器返回从实际迭代器发出的值的观察版本(代理)
     return {
-      // iterator protocol
+      // 迭代器协议
       next() {
         const { value, done } = innerIterator.next()
         return done
@@ -209,7 +214,7 @@ function createIterableMethod(
               done
             }
       },
-      // iterable protocol
+      // 可迭代协议
       [Symbol.iterator]() {
         return this
       }
@@ -230,6 +235,7 @@ function createReadonlyMethod(type: TriggerOpTypes): Function {
   }
 }
 
+// 模拟Map/Set/WeakMap/WeakSet对象的原型上的属性方法
 const mutableInstrumentations: Record<string, Function> = {
   get(this: MapTypes, key: unknown) {
     return get(this, key)
@@ -296,7 +302,23 @@ iteratorMethods.forEach(method => {
   )
 })
 
+// 核心函数，用来生成handler.get函数
 function createInstrumentationGetter(isReadonly: boolean, shallow: boolean) {
+  // 缓存数据可能来自shallowInstrumentations、readonlyInstrumentations、mutableInstrumentations
+  // 这里比较特殊的原因式，诸如Map.prototype.set这样的属性，在代理后的对象使用会出现问题
+  /* 例：
+  var myMap = new Map();
+  var p = new Proxy(myMap, {
+    get: function(target, key, receiver){
+      return target[key]
+    }
+  })
+  p.set('age', 10)
+  //报错，Uncaught TypeError: Method Map.prototype.set called on incompatible receiver [object Object]
+  // 原因是，p.set获取set属性，进入handler.get,返回了myMap.set
+  // 但是代理后的数据虽然继承了来自target（这里是myMap）上的原型，也拥有p.__proto__.set方法
+  // 但是本身毕竟不是map实例，无法对set进行后续的set处理，所以这里需要手动模拟set函数
+  */
   const instrumentations = shallow
     ? shallowInstrumentations
     : isReadonly
@@ -316,6 +338,7 @@ function createInstrumentationGetter(isReadonly: boolean, shallow: boolean) {
       return target
     }
 
+    // 使用collections模拟的方法处理
     return Reflect.get(
       hasOwn(instrumentations, key) && key in target
         ? instrumentations
