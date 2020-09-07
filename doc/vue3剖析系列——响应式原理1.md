@@ -22,9 +22,40 @@ Data数据变更的时候触发setter,然后从Data维护的Dep实例的subs数�
 首先，如果Watcher使用的Data是对象类型，那么Data中所有的递归子属性都需要将Watcher收集，这是个资源浪费。  
 其次，对数组的劫持也没有做好，部分操作不是相应式的。  
 
+vue3的基本例子(官网例子)  
+[https://composition-api.vuejs.org/](https://composition-api.vuejs.org/)
+``` 
+<template>
+  <button @click="increment">
+    Count is: {{ state.count }}, double is: {{ state.double }}
+  </button>
+</template>
+
+<script>
+import { reactive, computed } from 'vue'
+
+export default {
+  setup() {
+    const state = reactive({
+      count: 0,
+      double: computed(() => state.count * 2)
+    })
+
+    function increment() {
+      state.count++
+    }
+
+    return {
+      state,
+      increment
+    }
+  }
+}
+</script>
+```
 
 ### effect.ts  
-主要函数有  
+用来生成/处理/追踪effect数据，主要是收集数据依赖（观察者），通知收集的依赖（观察者）。主要函数有  
   
 track(target, type, key)  
 添加追踪数据，所有的target数据都被缓存到targetMap中以{target-> key-> dep}格式存储，优化内存开销。  
@@ -32,13 +63,16 @@ track(target, type, key)
 当前target的dep数据也会被activeEffect收集（push到activeEffect.deps）
   
 effect(fn, options):ReactiveEffect   
-工厂函数，返回一个反应式数据：ReactiveEffect函数。执行ReactiveEffect即可将数据加入可追踪队列effectStack，并将当前数据设置为activeEffect，并执行fn。  
+返回一个effect数据：ReactiveEffect函数。执行ReactiveEffect即可将数据加入可追踪队列effectStack，并将当前数据设置为activeEffect，并执行fn。  
       
 trigger(target, type, key, newValue, oldValue, oldTarget)      
-触发target上的响应式数据，即target-> key-> dep中存放的数据（全部key的），全部一一取出来执行  
+触发target上的响应式数据，即target-> key-> dep中存放的数据（全部key的），全部一一取出来执行
+如果观察者有提供scheduler则执行scheduler，否则执行函数本身  
+  
 
 
-### reactive.ts 
+### reactive.ts   
+接收一个普通对象然后返回该普通对象的响应式代理。等同于 2.x 的 Vue.observable()  
 反应式数据保存在reactiveMap和readonlyMap中，便于存取（已经存在的，直接读取）  
 只能对可拓展的对象才能做proxy代理，并存入reactiveMap或readonlyMap中  
   
@@ -63,10 +97,10 @@ shallowReadonly(target)
    
 
 ### baseHandlers.ts  
-这个函数主要是对proxy代理的handler做通用处理  
+这个函数主要是对proxy代理的handler做通用处理，用来处理Object、Array类型  
   
 createGetter(isReadonly = false, shallow = false)  
-一个工厂函数，用来创建handler.get。get/shallowGet/readonlyGet/shallowReadonlyGet都是使用createGetter创建  
+用来创建handler.get。get/shallowGet/readonlyGet/shallowReadonlyGet都是使用createGetter创建  
 内部调用readonly或reactive做代理  
 目前只有当key对应的value值是对象的情况才做proxy代理  
 但是有几种情况不需要做代理：  
@@ -78,7 +112,7 @@ createGetter(isReadonly = false, shallow = false)
 
 
 createSetter(shallow = false)  
-一个工厂函数，用来创建handler.set。set/shallowSet都是用createSetter创建。内部通过调用trigger来通知所有的观察者  
+用来创建handler.set。set/shallowSet都是用createSetter创建。内部通过调用trigger来通知所有的观察者  
 里面有几个特殊处理。  
 对于非浅反应式数据（即非shallowReactive创建代理），如果数据不是数组，且旧值是引用，且新值不是引用，直接赋值，不通知观察者响应  
 ```
@@ -155,21 +189,77 @@ if (target === toRaw(receiver)) {
 deleteProperty(target, key)   
 删除对象的属性，内部通过调用trigger通知所有的观察者
 
+### collectionHandlers.ts
+和baseHandlers.ts类似。这个函数主要是对proxy代理的handler做通用处理。用来处理 'Map'\'Set'、'WeakMap'、'WeakSet'四种对象类型
+需要注意，这四个工厂函数的实例存取出数据是自己的一套api,和普通对象不同。所以访问api都只会进入handler.get中，所以handler只有get方法，比如
+``` 
+// 普通Map/Set/WeakMap/WeakSet实例的代理的handler
+export const mutableCollectionHandlers: ProxyHandler<CollectionTypes> = {
+  get: createInstrumentationGetter(false, false)
+}
+```  
+  
+createInstrumentationGetter(isReadonly: boolean, shallow: boolean)  
+核心函数，返回一个handler.get函数
+这里面必须要说到Map/Set/WeakMap/WeakSet存取有自己的方法，这些方法只能用于他们自己的实例类型。和Object/Array（Array的操作方法如push/pop等最终也是通过属性的访问设置来处理的。比如arr.pop最终调用的是arr.length=value）直接通过属性访问不同。  
+这就导致myMap经过代理后的数据myMapProxy无法直接使用Map.prototype.set方法设置，因为myMapProxy数据结构和myMap数据结构是不同的。所以需要手动提供Map实例的代理数据的set方法。源码如下
+``` 
+// mutableInstrumentations/shallowInstrumentations/readonlyInstrumentations类似
+const mutableInstrumentations: Record<string, Function> = {
+  get(this: MapTypes, key: unknown) {
+    return get(this, key)
+  },
+  get size() {
+    return size((this as unknown) as IterableCollections)
+  },
+  has,
+  add,
+  set,
+  delete: deleteEntry,
+  clear,
+  forEach: createForEach(false, false)
+}
 
+// 核心函数，用来生成handler.get函数
+function createInstrumentationGetter(isReadonly: boolean, shallow: boolean) {
+  // 缓存数据可能来自shallowInstrumentations、readonlyInstrumentations、mutableInstrumentations
+  // 这里比较特殊的原因式，诸如Map.prototype.set这样的属性，在代理后的对象使用会出现问题
+  /* 例：
+  var myMap = new Map();
+  var myMapProxy = new Proxy(myMap, {
+    get: function(target, key, receiver){
+      return target[key]
+    }
+  })
+  myMapProxy.set('age', 10)
+  // 报错，Uncaught TypeError: Method Map.prototype.set called on incompatible receiver [object Object]
+  // 原因是，myMapProxy.set获取set属性，进入handler.get,返回了myMap.set
+  // 但是myMapProxy虽然继承了来自Map上的prototype属性，拥有p.__proto__.set方法
+  // 但是本身毕竟不是ap实例,数据结构不同，无法对set进行后续的赋值处理，所以这里需要手动模拟set函数
+  */
+  const instrumentations = shallow
+    ? shallowInstrumentations
+    : isReadonly
+      ? readonlyInstrumentations
+      : mutableInstrumentations
 
-### ref
-对外暴露的接口  
-  ref,
-  shallowRef,
-  isRef,
-  toRef,
-  toRefs,
-  unref,
-  proxyRefs,
-  customRef,
-  triggerRef,
-  Ref,
-  ToRefs,
-  UnwrapRef,
-  ShallowUnwrapRef,
-  RefUnwrapBailTypes  
+  return (
+    target: CollectionTypes,
+    key: string | symbol,
+    receiver: CollectionTypes
+  ) => {
+    //...
+    // 使用collections模拟的方法处理
+    return Reflect.get(
+      hasOwn(instrumentations, key) && key in target
+        ? instrumentations
+        : target,
+      key,
+      receiver
+    )
+  }
+}
+```
+  
+其他的方法都是大同小异。比较特殊的可能是['keys', 'values', 'entries', Symbol.iterator]，
+这四个key对应的函数返回值都是一个新的迭代器对象，需要特殊处理  
