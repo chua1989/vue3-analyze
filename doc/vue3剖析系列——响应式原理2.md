@@ -23,8 +23,11 @@ operations：提供TrackOpTypes和TriggerOpTypes两个枚举类型，供其他�
   
   count.value++
   console.log(count.value) // 1
-  ```
-  
+```
+整个数据结构和数据流如下
+![ref-reactive简单demo的数据流图](./ref-reactive.png)  
+现有一个大概印象，看完下面的详细描述，再回过头来看就比较清晰了  
+    
   
 主要函数对外暴露的接口  
 ref(value),shallowRef(value)

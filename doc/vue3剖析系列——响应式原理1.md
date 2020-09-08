@@ -80,6 +80,15 @@ reactive(target)
 对target数据进行proxy代理，存入reactiveMap中,返回代理后的数据  
 handler取自baseHandlers(Object和Array类型)和collectionHandlers（Map/Set/WeakMap/WeakSet类型），分别在baseHandlers.ts和collectionHandlers.ts中定义  
 内部调用createReactiveObject函数，创建代理数据  
+handler的getter和setter都有专门针对ref类型数据的特殊处理，ref数据是下面的结构
+```  
+// ref(0)的数据结构，其中_value保存原始值
+refdata: RefImpl {
+ __v_isRef: true,
+  _value: 0
+}
+```
+针对ref数据需要存取其原始值，即对_value进行存取  
 
 readonly(target)  
 和reactive类似，只不过创建只读proxy代理。缓存到readonlyMap  
