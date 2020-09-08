@@ -1,7 +1,7 @@
 import * as m from 'monaco-editor'
 import { compile, CompilerError, CompilerOptions } from '@vue/compiler-dom'
 import { compile as ssrCompile } from '@vue/compiler-ssr'
-import { compilerOptions, initOptions, ssrMode } from './options'
+import { compilerOptions, initOptions, ssrMode } from './options.js'
 import { watchEffect } from '@vue/runtime-dom'
 import { SourceMapConsumer } from 'source-map'
 import theme from './theme'

@@ -1,14 +1,15 @@
 import {
   reactive,
   toRaw,
-} from './reactive'
-import { track, trigger } from './effect'
+} from './reactive.js'
+import { track, trigger } from './effect.js'
 import {
   hasOwn,
   hasChanged,
   isArray,
   isIntegerKey,
-} from '../shared/src/index'
+} from '../shared/src/index.js'
+import {isRef} from "./ref.js";
 
 
 const get = /*#__PURE__*/ createGetter()
@@ -16,7 +17,7 @@ const get = /*#__PURE__*/ createGetter()
 // 对于数组的几个查询方法做特殊处理，比如将数组的数据都加入追踪
 const arrayInstrumentations = {}
 ;['includes', 'indexOf', 'lastIndexOf'].forEach(key => {
-  arrayInstrumentations[key] = function(...args): any {
+  arrayInstrumentations[key] = function(...args){
     const arr = toRaw(this)
     // 数组中的每一项数据都添加追踪
     for (let i = 0, l = this.length; i < l; i++) {
@@ -48,6 +49,13 @@ function createGetter() {
     // 不是只读key,则加入追踪
     track(target, 'get', key)
 
+    // 如果是引用，在数据是ref配合reactive/computed使用时进入
+    if (isRef(res)) {
+      // 展开引用 - 不适用于数组+整数键。
+      const shouldUnwrap = !targetIsArray || !isIntegerKey(key)
+      return shouldUnwrap ? res.value : res
+    }
+
     if (typeof res === 'object') {
       //将返回值也转换为代理。
       // 我们在此处进行isObject检查，以避免出现无效值警告。
@@ -64,7 +72,15 @@ const set = /*#__PURE__*/ createSetter()
 // 核心函数，用来创建handler.set
 function createSetter(shallow = false) {
   return function set(target, key, value, receiver) {
-    const oldValue = (target as any)[key]
+    const oldValue = target[key]
+
+    value = toRaw(value)
+    // 如果数据不是数组，且旧值是引用，且新值不是引用，直接赋值
+    if (!isArray(target) && isRef(oldValue) && !isRef(value)) {
+      // 专门处理ref数据
+      oldValue.value = value
+      return true
+    }
 
     // key的特殊情况：对于数组来说当key为数字时，要判断这个数字是否小于数组长度，大于等于就被认为没有这个key
     const hadKey =

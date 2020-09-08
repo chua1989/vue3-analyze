@@ -1,4 +1,3 @@
-import {objectToString, toTypeString} from "../../../vue-next/packages/shared/src";
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
 export const hasOwn = (val, key) => hasOwnProperty.call(val, key)
@@ -16,6 +15,7 @@ export const isIntegerKey = (key) =>
 export const hasChanged = (value, oldValue) =>
     value !== oldValue && (value === value || oldValue === oldValue)
 
+export const objectToString = Object.prototype.toString
 export const toTypeString = (value) =>
     objectToString.call(value)
 export const toRawType = (value) => {

@@ -97,7 +97,7 @@ function createGetter(isReadonly = false, shallow = false) {
       return res
     }
 
-    // 如果是引用？？？
+    // 如果是引用，在数据是ref配合reactive/computed使用时进入
     if (isRef(res)) {
       // 展开引用 - 不适用于数组+整数键。
       const shouldUnwrap = !targetIsArray || !isIntegerKey(key)
@@ -131,6 +131,7 @@ function createSetter(shallow = false) {
       value = toRaw(value)
       // 如果数据不是数组，且旧值是引用，且新值不是引用，直接赋值
       if (!isArray(target) && isRef(oldValue) && !isRef(value)) {
+        // 专门处理ref数据
         oldValue.value = value
         return true
       }

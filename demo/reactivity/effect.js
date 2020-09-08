@@ -2,9 +2,7 @@
 // 主要WeakMap,存储格式{target-> key-> dep}。
 // 从概念上讲，将依赖关系视为维护一组订阅者的Dep类会更容易，
 // 但是我们只是将它们存储为原始Set来减少内存开销。
-import {isArray, isIntegerKey} from "../../vue-next/packages/shared/src";
-import {ITERATE_KEY, TriggerOpTypes} from "../../vue-next/packages/reactivity/src";
-import {MAP_KEY_ITERATE_KEY} from "../../vue-next/packages/reactivity/src/effect";
+import {isArray} from "../shared/src/index.js";
 
 const targetMap = new WeakMap()
 
