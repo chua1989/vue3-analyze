@@ -51,7 +51,8 @@ export function isEffect(fn: any): fn is ReactiveEffect {
 }
 
 /**
- * @desc 包装fn,options为effect数据，初次调用会主动执行一次，数据将加入到effectStack中
+ * @desc 包装fn,options为reactiveEffect数据，初次调用会主动执行一次，数据将加入到effectStack中
+ * 并将reactiveEffect设置为activeEffect，然后执行fn,fn中可以将reactiveEffect加入target[key]的观察者队列
  * @param fn
  * @param options
  */
@@ -59,11 +60,11 @@ export function effect<T = any>(fn: () => T, options: ReactiveEffectOptions = EM
   if (isEffect(fn)) {
     fn = fn.raw
   }
-  // fn初次进入创建反应式数据，返回的effect是一个函数
+  // fn初次进入创建反应式数据，返回的reactiveEffect是一个函数
   const effect = createReactiveEffect(fn, options)
   // 不是lazy立马执行一次，(lazy effect主要用于computed)
   if (!options.lazy) {
-    // 立马执行，加入到effectStack
+    // 立马执行，加入到effectStack，fn函数执行添加观察者
     effect()
   }
   return effect
@@ -83,8 +84,8 @@ export function stop(effect: ReactiveEffect) {
 let uid = 0
 
 /**
- * @desc 用当前fn和options创建一个effect,并将之返回
- * 这个返回的effect初次执行时将被设置为activeEffect，并将该effect添加到effectStack的队尾，与之对应的trackStack添加对应的shouldTrack标志
+ * @desc 用当前fn和options创建一个reactiveEffect,并将之返回
+ * 这个返回的reactiveEffect执行时将被设置为activeEffect，然后执行fn,fn中可以调用track将reactiveEffect添加为target[key]的观察者
  * @param fn
  * @param options
  */
@@ -95,7 +96,7 @@ function createReactiveEffect<T = any>( fn: () => T, options: ReactiveEffectOpti
     // 与之对应的trackStack添加对应的shouldTrack标志
     // 并返回fn()
     if (!effect.active) {
-      // 停止响应式数据后，不再执行数据追踪等
+      // 停止响应式数据后，不再添加观察者
       return options.scheduler ? undefined : fn()
     }
     if (!effectStack.includes(effect)) {
@@ -105,10 +106,11 @@ function createReactiveEffect<T = any>( fn: () => T, options: ReactiveEffectOpti
         enableTracking()
         effectStack.push(effect)
         // 当前effect设置为activeEffect
-        // 第一次track被调用时，该effect会被加入effectStack
+        // fn中如果有调用track, 第一次track被调用时，会将reactiveEffect添加为target[key]的观察者
         activeEffect = effect
         return fn()
       } finally {
+        // 恢复初始状态
         effectStack.pop()
         resetTracking()
         activeEffect = effectStack[effectStack.length - 1]
@@ -164,7 +166,7 @@ export function resetTracking() {
  * target为传入的响应式数据对象，type为操作类型，key为target上被追踪的key
  */
 export function track(target: object, type: TrackOpTypes, key: unknown) {
-  // 如果shouldTrack为false 或者 当前没有活动中的effect，不需要执行追踪的逻辑
+  // 如果shouldTrack为false 或者 当前没有活动中的reactiveEffect，直接返回
   // shouldTrack为依赖追踪提供一个全局的开关，可以很方便暂停/开启，比如用于setup以及生命周期执行的时候
   if (!shouldTrack || activeEffect === undefined) {
     return
@@ -183,8 +185,8 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
   }
 
   if (!dep.has(activeEffect)) {
-    // 如果target[key]下面没有当前活动中的effect，就把这个effect加入到这个deps中
-    // 结合effect函数可以知道activeEffect在effect函数初次调用时会创建
+    // 如果target[key]下面没有当前活动中的reactiveEffect，就把这个reactiveEffect加入到这个deps中
+    // 结合reactiveEffect函数知道可以fn中执行track才会进入此处
     dep.add(activeEffect)
     activeEffect.deps.push(dep)
     if (__DEV__ && activeEffect.options.onTrack) {
@@ -243,7 +245,7 @@ export function trigger(
       }
     })
   } else {
-    // 计划用来运行 SET | ADD | DELETE
+    // 将target[key]的观察者取出来
     if (key !== void 0) {
       add(depsMap.get(key))
     }
@@ -277,7 +279,7 @@ export function trigger(
         oldTarget
       })
     }
-    // 如果有提供scheduler则执行scheduler，否则执行函数本身
+    // 如果有提供scheduler则执行scheduler，否则执行reactiveEffect函数本身
     if (effect.options.scheduler) {
       effect.options.scheduler(effect)
     } else {
