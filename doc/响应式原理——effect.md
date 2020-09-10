@@ -9,7 +9,6 @@ effect：
 operations：提供TrackOpTypes和TriggerOpTypes两个枚举类型，供其他模块使用
 
 ## 剖析
-详细剖析每一个模块的功能  
 
 ### Vue2响应式原理
 什么是响应式数据？即A依赖于B数据，当B值发生变化时，通知A。很显然，这里应该使用观察者模式    
