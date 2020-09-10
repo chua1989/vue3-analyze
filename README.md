@@ -20,4 +20,6 @@ vue-next: vue-next的源码，其中很多关键地方添加了注释
 [尤雨溪：the Class API proposal is being dropped.](https://github.com/vuejs/rfcs/pull/17#issuecomment-494242121)  
 [xcatliu：TypeScript 入门教程](https://ts.xcatliu.com/introduction/index.html)
 
-
+## 说明
+该仓库是本人学习vue3源码的笔记，难免有不正确的地方，欢迎大家指正。  
+目前笔记还在边学习边整理中，欢迎star和pull request      
