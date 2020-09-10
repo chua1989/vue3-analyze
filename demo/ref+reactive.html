@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ref+reactive</title>
+</head>
+<body>
+<script type="module">
+    import { ref, reactive } from './reactivity/index.js'
+    const count = ref(0)
+    const state = reactive({
+        count,
+    })
+    console.log(state.count) // 0
+    state.count = 1
+    console.log(count.value) // 1
+</script>
+</body>
+</html>

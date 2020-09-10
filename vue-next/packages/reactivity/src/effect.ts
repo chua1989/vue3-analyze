@@ -139,16 +139,20 @@ let shouldTrack = true
 const trackStack: boolean[] = []
 
 export function pauseTracking() {
+  // 将上一个数据的shouldTrack状态先保存
   trackStack.push(shouldTrack)
   shouldTrack = false
 }
 
 export function enableTracking() {
+  // 将上一个数据的shouldTrack状态先保存
   trackStack.push(shouldTrack)
+  // 新数据的shouldTrack设置为true
   shouldTrack = true
 }
 
 export function resetTracking() {
+  // 获取上一个数据的shouldTrack状态
   const last = trackStack.pop()
   shouldTrack = last === undefined ? true : last
 }

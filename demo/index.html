@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <style>
+        div > a{
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div>首页</div>
-    <script type="module">
-        import { ref, reactive } from './reactivity/index.js'
-        const count = ref(0)
-        const state = reactive({
-            count,
-        })
-        console.log(state.count) // 0
-        state.count = 1
-        console.log(count.value) // 1
-    </script>
+    <div>
+        <a target="_blank" href="/effect.html">effect</a>
+        <a target="_blank" href="/effect2.html">effect优化</a>
+        <a target="_blank" href="/ref+reactive.html">ref+reactive</a>
+        <a target="_blank" href="/ref+computed.html">ref+computed</a>
+    </div>
 </body>
 </html>

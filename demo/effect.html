@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>effect</title>
+</head>
+<body>
+<script type="module">
+    import { effect, track, trigger } from './reactivity/index.js'
+    let target = {
+        age: 10
+    }
+    const fn = () => {
+        if(!fn.isTracked){
+            fn.isTracked = true
+            track(target, 'get', 'age')
+            console.log('添加fn对应的reactiveEffect函数到target.age的观察者队列')
+        }else{
+            console.log('触发target.age的trigger【通知观察者】')
+        }
+    }
+    // fn对应的reactiveEffect是否已经添加为target.age的观察者
+    fn.isTracked = false;
+
+    // 将fn函数包裹一层为reactiveEffect函数
+    const myEffect = effect(fn, { lazy: true })
+    // myEffect每次执行都会将自己设置为activeEffect，并执行fn函数
+    myEffect()
+    // 设置新值并手动通知target.age的所有观察者
+    target.age = 20
+    trigger(target, 'set', 'age')
+</script>
+</body>
+</html>

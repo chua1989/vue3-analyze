@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ref+computed</title>
+</head>
+<body>
+<script type="module">
+    import { ref, computed } from './reactivity/index.js'
+    const count = ref(1)
+    const plusOne = computed({
+        get: () => count.value + 1,
+        set: (val) => {
+            count.value = val - 1
+        },
+    })
+    plusOne.value = 1
+    console.log(count.value) // 0
+    console.log(plusOne.value) // 1
+</script>
+</body>
+</html>

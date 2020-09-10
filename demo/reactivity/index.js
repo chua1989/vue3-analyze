@@ -11,3 +11,6 @@ export {
   trigger,
   track,
 } from './effect.js'
+export {
+  computed
+} from './computed.js'

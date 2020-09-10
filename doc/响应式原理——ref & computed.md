@@ -153,7 +153,11 @@ const plusOne = computed({
 
 plusOne.value = 1
 console.log(count.value) // 0
+console.log(plusOne.value) // 1
 ```
+数据流程大致如下 
+
+
 实现原理  
 计算属性返回的是一个ComputedRefImpl类的实例computedObject，提供了对value的getter/setter，
 实例一开始将_dirty标记为true,表示数据是脏数据，和缓存的数据不一致，取值时应该以脏数据为准。  

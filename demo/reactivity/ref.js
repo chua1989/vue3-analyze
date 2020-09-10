@@ -14,9 +14,10 @@ export function ref(value) {
 }
 
 class RefImpl {
-  __v_isRef = true
-
+  __v_isRef = true;
+  _rawValue;
   constructor(_rawValue) {
+    this._rawValue = _rawValue
     this._value = convert(_rawValue)
   }
 

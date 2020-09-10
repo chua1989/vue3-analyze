@@ -5,7 +5,7 @@ let express = require('express'),
 app.use('/', express.static(path.resolve(__dirname, '.')));
 
 // 路由中转
-app.use('/index.html', function(req, res, next){
+app.use('/', function(req, res, next){
     res.sendFile(path.resolve('./index.html'));
 });
 

@@ -21,3 +21,5 @@ export const toTypeString = (value) =>
 export const toRawType = (value) => {
     return toTypeString(value).slice(8, -1)
 }
+
+export const NOOP = () => {}
