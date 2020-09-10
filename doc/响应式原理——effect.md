@@ -140,7 +140,7 @@ const fn = () => {
 }
 fn._isTracked = false
 
-const myEffect = effect(target.fn, { lazy: true })
+const myEffect = effect(fn, { lazy: true })
 myEffect() //打印： '添加fn的reactiveEffect函数添加到target.age的观察者队列'
 target.age = 20 //打印： '触发target.age的trigger【通知观察者】, 进入此处'
 ```  
