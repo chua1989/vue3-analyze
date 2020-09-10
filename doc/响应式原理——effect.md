@@ -34,7 +34,8 @@ data.age = 20 // 被观察者变更，通知观察者， 红色箭头
 3.对数组的劫持也没有做好，部分操作不是响应式的。  
 
 
-### effect.ts  
+### effect.ts
+为了解决vue2的问题，依赖收集（即添加观察者/通知观察者）模块单独出来，就是现在的effect    
 用来生成/处理/追踪reactiveEffect数据，主要是收集数据依赖（观察者），通知收集的依赖（观察者）。  
 提供了三个函数主要函数：effect/track/trigger。  
 effect是将传入的函数转化为reactiveEffect格式的函数    
