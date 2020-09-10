@@ -4,10 +4,14 @@
 官方文档：[https://v3.vuejs.org/](https://v3.vuejs.org/)  
 开发文档(包括编译方法/目录结构等)：[https://github.com/vuejs/vue-next/blob/master/.github/contributing.md](https://github.com/vuejs/vue-next/blob/master/.github/contributing.md)    
 RFC文档：[https://github.com/vuejs/rfcs/pulls?page=1&q=is%3Apr+is%3Amerged+label%3A3.x](https://github.com/vuejs/rfcs/pulls?page=1&q=is%3Apr+is%3Amerged+label%3A3.x)  
-    
-## 文章列表
-[vue3剖析系列——响应式原理]()
 
+## 目录结构
+demo: vue-next的简版，保留了核心逻辑    
+doc: 文档文件夹  
+vue-next: vue-next的源码，其中很多关键地方添加了注释  
+   
+## 文章列表
+[响应式原理——effect](./doc/响应式原理——effect.md)  
 
 
 
