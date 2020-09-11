@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>proxy</title>
+</head>
+<body>
+<script>
+    "use strict"
+    const target = {
+        msg: "hello"
+    };
+
+    const handler = {
+        set: function(target, prop, value, receiver){
+            target[prop] = value
+        }
+    };
+
+    const proxy = new Proxy(target, handler);
+    proxy.handler = 'wow'
+    console.log(proxy.msg)
+</script>
+</body>
+</html>

@@ -1,13 +1,6 @@
 # 响应式原理
 源码目录：https://github.com/vuejs/vue-next/tree/master/packages/reactivity  
 
-## 模块
-ref：   
-reactive：  
-computed：  
-effect：  
-operations：提供TrackOpTypes和TriggerOpTypes两个枚举类型，供其他模块使用
-
 
 vue3的基本例子(官网例子)  
 [https://composition-api.vuejs.org/](https://composition-api.vuejs.org/)
@@ -42,12 +35,13 @@ export default {
 ```
 
 
-### reactive.ts   
+## reactive.ts   
+---
 接收一个普通对象然后返回该普通对象的响应式代理。等同于 2.x 的 Vue.observable()  
 反应式数据保存在reactiveMap和readonlyMap中，便于存取（已经存在的，直接读取）  
 只能对可拓展的对象才能做proxy代理，并存入reactiveMap或readonlyMap中  
-  
-reactive(target)    
+   
+### reactive(target)    
 对target数据进行proxy代理，存入reactiveMap中,返回代理后的数据  
 handler取自baseHandlers(Object和Array类型)和collectionHandlers（Map/Set/WeakMap/WeakSet类型），分别在baseHandlers.ts和collectionHandlers.ts中定义  
 内部调用createReactiveObject函数，创建代理数据  
@@ -61,14 +55,14 @@ refdata: RefImpl {
 ```
 针对ref数据需要存取其原始值，即对_value进行存取  
 
-readonly(target)  
+### readonly(target)  
 和reactive类似，只不过创建只读proxy代理。缓存到readonlyMap  
   
-shallowReactive(target)  
+### shallowReactive(target)  
 对target进行浅反应式数据代理，proxy的handler取自shallowReactiveHandlers和shallowCollectionHandlers  
 其中只有根级别属性是反应式的
 
-shallowReadonly(target)   
+### shallowReadonly(target)   
 返回一个原始对象的反应式数据拷贝，其中只有根级别属性是只读的。
 并且不会解开引用，也不会递归转换返回的属性。
 这用于为有状态组件创建props代理对象。
@@ -76,10 +70,10 @@ shallowReadonly(target)
 上面这些创建代理数据都通过调用核心函数createReactiveObject得到，createReactiveObject中使用Proxy做代理，逻辑还比较简单的，读一下就明白  
    
 
-### baseHandlers.ts  
+## baseHandlers.ts  
 这个函数主要是对proxy代理的handler做通用处理，用来处理Object、Array类型  
   
-createGetter(isReadonly = false, shallow = false)  
+### createGetter(isReadonly = false, shallow = false)  
 用来创建handler.get。get/shallowGet/readonlyGet/shallowReadonlyGet都是使用createGetter创建  
 内部调用readonly或reactive做代理  
 目前只有当key对应的value值是对象的情况才做proxy代理  
@@ -88,10 +82,10 @@ createGetter(isReadonly = false, shallow = false)
 2.数组中['includes', 'indexOf', 'lastIndexOf']几个属性  
 3.key是builtInSymbols（Symbol对象的属性value中属于Symbol类型的几个值）中的值或者是__proto__或__v_isRef则直接返回结果  
 4.浅处理（shallow为true），浅处理只是加入了track,但是没有做反应式代理  
-5.key对应的value值是引用的情况  
+5.key对应的value值是引用ref的情况  
 
 
-createSetter(shallow = false)  
+### createSetter(shallow = false)  
 用来创建handler.set。set/shallowSet都是用createSetter创建。内部通过调用trigger来通知所有的观察者  
 里面有几个特殊处理。  
 对于非浅反应式数据（即非shallowReactive创建代理），如果数据不是数组，且旧值是引用，且新值不是引用，直接赋值，不通知观察者响应  
