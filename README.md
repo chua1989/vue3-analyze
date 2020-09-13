@@ -4,6 +4,7 @@
 官方文档：[https://v3.vuejs.org/](https://v3.vuejs.org/)  
 开发文档(包括编译方法/目录结构等)：[https://github.com/vuejs/vue-next/blob/master/.github/contributing.md](https://github.com/vuejs/vue-next/blob/master/.github/contributing.md)    
 RFC文档：[https://github.com/vuejs/rfcs/pulls?page=1&q=is%3Apr+is%3Amerged+label%3A3.x](https://github.com/vuejs/rfcs/pulls?page=1&q=is%3Apr+is%3Amerged+label%3A3.x)  
+API 手册：[https://composition-api.vuejs.org/zh/api.html](https://composition-api.vuejs.org/zh/api.html)  
 
 ## 目录结构
 demo: vue-next的简版，保留了核心逻辑    
