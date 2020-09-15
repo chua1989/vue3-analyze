@@ -12,8 +12,8 @@ doc: 文档文件夹
 vue-next: vue-next的源码，其中很多关键地方添加了注释  
    
 ## 文章列表
-[响应式原理——effect](./doc/响应式原理——effect.md)  
-
+[响应式原理——effect](./doc/响应式原理——effect.md)    
+[Proxy使用详解](./doc/Proxy使用详解.md)  
 
 
 ## 参考/引用
