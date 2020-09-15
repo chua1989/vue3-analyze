@@ -6,28 +6,14 @@
 </head>
 <body>
 <script>
-"use strict"
-var obj = {}
-const defineReactive =  function(data, key, val) {
-    Object.defineProperty(data, key, {
-        get: function(){
-            return val
-        },
-        set: undefined // 应该设置成下面这个正确的函数
-        // function(newVal) {
-        //     val = newVal;
-        // }
-    });
-}
-defineReactive(obj, 'year', obj.year)
-var proxy = new Proxy(obj, {
-    set(target, prop, val){
-        target[prop] = val
-        return true
+    var handler = {
+        construct: function(target, args) {
+            console.log(this ===  handler);
+            return new target(...args);
+        }
     }
-})
-obj.year = 20 // Uncaught TypeError: Cannot set property year of #<Object> which has only a getter
-proxy.year = 30 // Uncaught TypeError: Cannot set property year of #<Object> which has only a getter
+    var p = new Proxy(function() {}, handler);
+    new p() // true
 </script>
 </body>
 </html>
